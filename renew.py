@@ -14,9 +14,6 @@ if not username or not password:
     print("Error: Missing credentials in GitHub Secrets.")
     sys.exit(1)
 
-domain = f"{username.lower()}.pythonanywhere.com"
-
-# Force desktop mode to bypass mobile responsive menus
 options = Options()
 options.add_argument("--headless=new")
 options.add_argument("--no-sandbox")
@@ -35,55 +32,50 @@ try:
     driver.find_element(By.NAME, "auth-password").send_keys(password)
     driver.find_element(By.ID, "id_next").click()
     
-    wait.until(EC.url_changes("https://www.pythonanywhere.com/login/"))
+    wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Log out")))
     print(f"Login successful! Landed on: {driver.current_url}")
     
-    print("Navigating to Web tab...")
-    # THE FIX: Force the URL username to lowercase to prevent 403 Access Denied
-    driver.get(f"https://www.pythonanywhere.com/user/{username.lower()}/webapps/")
+    # THE FIX: Stop guessing URLs. Physically click the "Web" tab like a human.
+    print("Clicking the 'Web' tab in the navigation bar...")
+    web_tab = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Web")))
+    web_tab.click()
     
-    # Wait 5 seconds to guarantee all React/JavaScript UI elements finish loading
-    time.sleep(5) 
+    # Wait for the webapps page to load fully
+    time.sleep(4)
+    print(f"Now safely on Web tab: {driver.current_url}")
     
     print("Locating the Extend button...")
     extend_btn = None
     
-    # Strategy 1: Find any button containing the text "Run until"
+    # Strategy 1: The standard "Run until" button
     try:
         extend_btn = driver.find_element(By.XPATH, "//input[contains(@value, 'Run until')] | //button[contains(text(), 'Run until')]")
     except:
         pass
         
-    # Strategy 2: Find a form with an action containing "extend"
+    # Strategy 2: Any form submitting to the /extend action
     if not extend_btn:
         try:
             extend_form = driver.find_element(By.XPATH, "//form[contains(@action, 'extend')]")
             extend_btn = extend_form.find_element(By.XPATH, ".//button | .//input[@type='submit']")
         except:
             pass
-            
-    # Strategy 3: Find the specific warning button class PythonAnywhere uses
-    if not extend_btn:
-        try:
-            extend_btn = driver.find_element(By.XPATH, "//*[contains(@class, 'btn-warning')]")
-        except:
-            pass
 
     if extend_btn:
-        print("Extend button found! Force-clicking it via JavaScript...")
+        print("Extend button found! Force-clicking it...")
         driver.execute_script("arguments[0].click();", extend_btn)
-        print(f"Successfully renewed {domain} for another 30 days!")
+        time.sleep(2) 
+        print("Successfully renewed the web app for another 30 days!")
     else:
-        print("Extend button NOT FOUND. The app might already be fully renewed, or the UI has changed.")
-        print("\n--- BEGIN VISUAL TEXT DUMP OF THE DASHBOARD ---")
-        # Extract the text of the page so we can see exactly what the bot is looking at
-        body_text = driver.find_element(By.TAG_NAME, "body").text
-        print(body_text[:2000])
+        print("Extend button NOT FOUND. The app might already be fully renewed.")
+        print("\n--- BEGIN VISUAL TEXT DUMP ---")
+        print(driver.find_element(By.TAG_NAME, "body").text[:2000])
         print("--- END TEXT DUMP ---\n")
         sys.exit(1)
 
 except Exception as e:
     print(f"Failed to renew: {e}")
+    print(f"Failed on URL: {driver.current_url}")
     sys.exit(1)
 finally:
     driver.quit()
