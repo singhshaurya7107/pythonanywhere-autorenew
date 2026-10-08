@@ -39,7 +39,8 @@ try:
     print(f"Login successful! Landed on: {driver.current_url}")
     
     print("Navigating to Web tab...")
-    driver.get(f"https://www.pythonanywhere.com/user/{username}/webapps/")
+    # THE FIX: Force the URL username to lowercase to prevent 403 Access Denied
+    driver.get(f"https://www.pythonanywhere.com/user/{username.lower()}/webapps/")
     
     # Wait 5 seconds to guarantee all React/JavaScript UI elements finish loading
     time.sleep(5) 
