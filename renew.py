@@ -15,7 +15,6 @@ if not username or not password:
 
 domain = f"{username.lower()}.pythonanywhere.com"
 
-# Force desktop mode and mimic a real user
 options = Options()
 options.add_argument("--headless=new")
 options.add_argument("--no-sandbox")
@@ -30,21 +29,24 @@ try:
     print("Logging into PythonAnywhere...")
     driver.get("https://www.pythonanywhere.com/login/")
     
-    # Use explicit IDs
-    wait.until(EC.presence_of_element_located((By.ID, "id_auth-username"))).send_keys(username)
-    driver.find_element(By.ID, "id_auth-password").send_keys(password)
+    wait.until(EC.presence_of_element_located((By.NAME, "auth-username"))).send_keys(username)
+    driver.find_element(By.NAME, "auth-password").send_keys(password)
     driver.find_element(By.ID, "id_next").click()
     
-    wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Log out")))
-    print("Login successful!")
+    # Wait for the URL to change away from the login page to confirm success
+    wait.until(EC.url_changes("https://www.pythonanywhere.com/login/"))
+    print(f"Login successful! Landed on: {driver.current_url}")
     
     print("Navigating to Web tab...")
     driver.get(f"https://www.pythonanywhere.com/user/{username}/webapps/")
     
-    print("Clicking the Extend button...")
-    extend_form = wait.until(EC.presence_of_element_located((By.XPATH, f"//form[contains(@action, 'extend')]")))
+    print("Locating the Extend button...")
+    extend_form = wait.until(EC.presence_of_element_located((By.XPATH, "//form[contains(@action, 'extend')]")))
     extend_btn = extend_form.find_element(By.XPATH, ".//button | .//input[@type='submit']")
-    extend_btn.click()
+    
+    print("Clicking the Extend button...")
+    # Force the click using JavaScript to bypass any hidden menus or intercepting banners
+    driver.execute_script("arguments[0].click();", extend_btn)
     
     print(f"Successfully renewed {domain} for another 30 days!")
 
