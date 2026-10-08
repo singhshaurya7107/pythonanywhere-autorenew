@@ -32,13 +32,13 @@ try:
     driver.find_element(By.NAME, "auth-password").send_keys(password)
     driver.find_element(By.ID, "id_next").click()
     
-    # Wait for the Log out button to prove we are fully authenticated
-    wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Log out")))
+    # THE FIX: Wait for "Welcome," text instead of a Log out link
+    wait.until(EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Welcome,')]")))
     print(f"Login successful! Landed on: {driver.current_url}")
     
-    # THE FIX: Click the 'Web' link natively to bypass the 403 Firewall
-    print("Clicking the 'Web' tab in the navigation bar natively...")
-    web_tab = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Web")))
+    # THE FIX: Find any link pointing to the webapps directory and click it natively
+    print("Locating the 'Web' link...")
+    web_tab = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(@href, '/webapps/')]")))
     driver.execute_script("arguments[0].click();", web_tab)
     
     time.sleep(5) 
